@@ -58,20 +58,22 @@
 
 #include "sounddata.h"
 
-int ledPin = 13;
-int speakerPin = 11; // Can be either 3 or 11, two PWM outputs connected to Timer 2
+const byte ledPin = 13;
+const byte speakerPin = 11; // Can be either 3 or 11, two PWM outputs connected to Timer 2
 volatile uint16_t sample;
 byte lastSample;
 int sample_rate = 8000;
 int defaultSampleRate = 8000;
 int analogVal;
 byte readFlag;
+int lastVal;
+int lastCheck;
+const byte checkDelay = 20;
 
 void stopPlayback()
 {
-  
-    OCR2A = sounddata_length + lastSample - sample;
-    // Disable playback per-sample interrupt.
+     
+      // Disable playback per-sample interrupt.
     TIMSK1 &= ~_BV(OCIE1A);
 
     // Disable the per-sample timer completely.
@@ -177,10 +179,10 @@ void startPlayback()
 
 void setup()
 {
-  
+   Serial.begin(9600); 
   // clear ADLAR in ADMUX (0x7C) to right-adjust the result
   // ADCL will contain lower 8 bits, ADCH upper 2 (in last two bits)
-  ADMUX &= B11011111;
+  /*ADMUX &= B11011111;
   // Set REFS1..0 in ADMUX (0x7C) to change reference voltage to the
   // proper source (01)
   ADMUX |= B01000000;
@@ -216,25 +218,87 @@ void setup()
   // Kick off the first ADC
   readFlag = 0;
   // Set ADSC in ADCSRA (0x7A) to start the ADC conversion
-  ADCSRA |= B01000000;
+  ADCSRA |= B01000000;*/
   
     pinMode(ledPin, OUTPUT);
     digitalWrite(ledPin, HIGH);
-    startPlayback();
+    lastVal = -10;
+    //startPlayback();
+    lastCheck = -1;
 }
 
 void loop()
 {
-  startPlayback();
-  if(readFlag == 1){
-    sample_rate = defaultSampleRate + analogVal;
+  analogVal = analogRead(A0)/10;
+  Serial.println(analogVal);
+
     readFlag = 0;
+    switch(analogVal){
+      case 0:
+        sample_rate = 8000;
+        if(lastVal + 2 < analogVal || lastVal - 2 > analogVal){
+          stopPlayback();
+          startPlayback();
+          lastVal= analogVal;
+          lastCheck = millis();
+        }
+      case 3://38
+        sample_rate = 8995;
+        if(lastVal + 8 < analogVal || lastVal - 8 > analogVal){
+          stopPlayback();
+          startPlayback();
+          lastVal= analogVal;
+          lastCheck = millis();
+        }
+      case 7://75
+        sample_rate = 10100;
+        if(lastVal + 8 < analogVal || lastVal - 8 > analogVal){
+          stopPlayback();
+          startPlayback();
+          lastVal= analogVal;
+          lastCheck = millis();
+        }
+      case 11://110
+        sample_rate = 10675;
+        if(lastVal + 8 < analogVal || lastVal - 8 > analogVal){
+          stopPlayback();
+          startPlayback();
+          lastVal= analogVal;
+          lastCheck = millis();
+        }
+       case 14://143
+        sample_rate = 12000;
+        if(lastVal + 8 < analogVal || lastVal - 8 > analogVal){
+          stopPlayback();
+          startPlayback();
+          lastVal= analogVal;
+          lastCheck = millis();
+        }
+      case 17://173
+        sample_rate = 13450;
+        if(lastVal + 8 < analogVal || lastVal - 8 > analogVal){
+          stopPlayback();
+          startPlayback();
+          lastVal= analogVal;
+          lastCheck = millis();
+        }
+       case 20://201
+        sample_rate = 14000;
+        if(lastVal + 8 < analogVal || lastVal - 8 > analogVal){
+          stopPlayback();
+          startPlayback();
+          lastVal= analogVal;
+          lastCheck = millis();
+        }
+       default:
+         if(lastVal + 8 < analogVal || lastVal - 8 > analogVal && millis()-checkDelay > lastCheck){
+          stopPlayback();
+          lastVal= 102;
+        }
   }
-  delay(2946);
-  stopPlayback();
 }
 
-ISR(ADC_vect) {
+/*ISR(ADC_vect) {
 
 		readFlag = 1;
 		analogVal = ADCL | (ADCH << 8);
@@ -245,4 +309,4 @@ ISR(ADC_vect) {
 	// Not needed because free-running mode is enabled.
 	// Set ADSC in ADCSRA (0x7A) to start another ADC conversion
 	// ADCSRA |= B01000000;
-}
+}*/
